@@ -8,37 +8,209 @@ datasource db {
 }
 
 model Coupon {
-  id                String              @id @default(uuid())
-  code              String              @unique
-  description       String?
-  discountType      String
-  discountValue     Decimal
-  startDate         DateTime
-  endDate           DateTime
-  maxUses           Int?
-  currentUses       Int                 @default(0)
-  minPurchaseAmount Decimal?
-  isActive          Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  redemptions       CouponRedemption[]
-  restrictions      CouponRestriction[]
+  id              String                 @id @default(uuid())
+  code            String                 @unique
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  currentUses     Int                    @default(0)
+  isActive        Boolean                @default(true)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  redemptions     CouponRedemption[]
+  discountDetails CouponDiscountDetails?
+  restrictions    CouponRestriction[]
+  attributes      Attribute[]
+  fundingPartners CouponFundingPartner[]
+}
+
+model CouponDiscountDetails {
+  id            String       @id @default(uuid())
+  couponId      String       @unique
+  discountType  DiscountType
+  discountValue Decimal
+  coupon        Coupon       @relation(fields: [couponId], references: [id])
 }
 
 model CouponRedemption {
-  id             String   @id @default(uuid())
+  id             String                 @id @default(uuid())
   couponId       String
   userId         String
   orderId        String
-  redemptionDate DateTime @default(now())
+  redemptionDate DateTime               @default(now())
+  purchaseAmount Decimal
   discountAmount Decimal
-  coupon         Coupon   @relation(fields: [couponId], references: [id])
+  status         CouponRedemptionStatus
+  coupon         Coupon                 @relation(fields: [couponId], references: [id])
+  attributes     Attribute[]
 }
 
 model CouponRestriction {
-  id               String @id @default(uuid())
-  couponId         String
-  restrictionType  String
-  restrictionValue String
-  coupon           Coupon @relation(fields: [couponId], references: [id])
+  id                         String                      @id @default(uuid())
+  couponId                   String
+  restrictionType            RestrictionType
+  coupon                     Coupon                      @relation(fields: [couponId], references: [id])
+  attributes                 Attribute[]
+  productRestriction         ProductRestriction?
+  categoryRestriction        CategoryRestriction?
+  userGroupRestriction       UserGroupRestriction?
+  minimumPurchaseRestriction MinimumPurchaseRestriction?
+  locationCodeRestriction    LocationCodeRestriction?
+  paymentMethodRestriction   PaymentMethodRestriction?
+  channelRestriction         ChannelRestriction?
+  maxUsesRestriction         MaxUsesRestriction?
+
+  @@unique([couponId, restrictionType], name: "couponId_restrictionType")
+}
+
+model ProductRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  products          Product[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model CategoryRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  categories        Category[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model UserGroupRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  userGroups        UserGroup[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model MinimumPurchaseRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  minimumAmount     Decimal
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model LocationCodeRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  locationCodes     LocationCode[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model PaymentMethodRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  paymentMethods    PaymentMethod[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model ChannelRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  channels          Channel[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model MaxUsesRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  maxUses           Int
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+}
+
+model Attribute {
+  id            String             @id @default(uuid())
+  referenceId   String
+  key           String
+  value         String
+  coupon        Coupon?            @relation(fields: [couponId], references: [id])
+  couponId      String?
+  redemption    CouponRedemption?  @relation(fields: [redemptionId], references: [id])
+  redemptionId  String?
+  restriction   CouponRestriction? @relation(fields: [restrictionId], references: [id])
+  restrictionId String?
+
+  @@unique([referenceId, key])
+}
+
+model CouponFundingPartner {
+  id           String         @id @default(uuid())
+  couponId     String
+  partnerId    String
+  contribution Decimal
+  coupon       Coupon         @relation(fields: [couponId], references: [id])
+  partner      FundingPartner @relation(fields: [partnerId], references: [id])
+
+  @@unique([couponId, partnerId], name: "couponId_partnerId")
+}
+
+// New tables for linked entities
+
+model Product {
+  id           String               @id @default(uuid())
+  name         String
+  restrictions ProductRestriction[]
+}
+
+model Category {
+  id           String                @id @default(uuid())
+  name         String
+  restrictions CategoryRestriction[]
+}
+
+model LocationCode {
+  id           String                    @id @default(uuid())
+  code         String                    @unique
+  restrictions LocationCodeRestriction[]
+}
+
+model FundingPartner {
+  id             String                 @id @default(uuid())
+  partnerName    String                 @unique
+  couponPartners CouponFundingPartner[]
+}
+
+model PaymentMethod {
+  id           String                     @id @default(uuid())
+  name         String                     @unique
+  restrictions PaymentMethodRestriction[]
+}
+
+model Channel {
+  id           String               @id @default(uuid())
+  name         String               @unique
+  restrictions ChannelRestriction[]
+}
+
+model UserGroup {
+  id           String                 @id @default(uuid())
+  name         String                 @unique
+  restrictions UserGroupRestriction[]
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  BUY_X_GET_Y_FREE
+  FREE_SHIPPING
+}
+
+enum RestrictionType {
+  PRODUCT
+  CATEGORY
+  USER_GROUP
+  MINIMUM_PURCHASE
+  LOCATION_CODE
+  PAYMENT_METHOD
+  CHANNEL
+  MAX_USES
+}
+
+enum CouponRedemptionStatus {
+  BLOCKED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  PENDING
 }
