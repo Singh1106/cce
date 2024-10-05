@@ -2,6 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { PrismaClientExceptionFilter } from './custom/prisma-client-exception.filter';
+import { envEnums } from './config/enums';
+import { ConfigService } from '@nestjs/config';
+import { ServerSettingsEnvVariables } from './config/types';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,7 +15,6 @@ async function bootstrap() {
     .setDescription('Coupon Codes Engine')
     .setVersion('1.0')
     .addTag('coupon-code-engine')
-    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
@@ -21,6 +24,11 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  await app.listen(3000);
+  const config =
+    app.get<ConfigService<ServerSettingsEnvVariables>>(ConfigService);
+  const port = config.get<number>(envEnums.PORT);
+
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
+  await app.listen(port);
 }
 bootstrap();

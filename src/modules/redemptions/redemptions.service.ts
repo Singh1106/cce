@@ -71,9 +71,6 @@ export class RedemptionsService {
         if (!blockedCouponRedemption) {
           throw new NotFoundException('Blocked coupon redemption not found');
         }
-
-        // Additional checks can be performed here if needed
-
         // Update the status of the blocked coupon redemption to COMPLETED
         const updatedRedemption = await prisma.couponRedemption.update({
           where: { id: blockedCouponRedemption.id },
