@@ -2,8 +2,6 @@
 import { Injectable } from '@nestjs/common';
 import {
   CreateCouponDto,
-  ValidateCouponDto,
-  RedeemCouponDto,
   UpdateCouponDto,
   CategoryRestrictionDto,
   ChannelRestrictionDto,
@@ -449,21 +447,9 @@ export class CouponsService {
     });
   }
 
-  // async update(id: string, updateCouponDto: UpdateCouponDto) {
-
-  // }
-
   async remove(id: string) {
     return this.prisma.coupon.delete({
       where: { id },
     });
-  }
-
-  async validate(validateCouponDto: ValidateCouponDto) {
-    // Implement validation logic here
-  }
-
-  async redeem(redeemCouponDto: RedeemCouponDto) {
-    // Implement redemption logic here
   }
 }

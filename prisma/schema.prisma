@@ -22,6 +22,10 @@ model Coupon {
   restrictions    CouponRestriction[]
   attributes      Attribute[]
   fundingPartners CouponFundingPartner[]
+
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
 }
 
 model CouponDiscountDetails {
@@ -30,6 +34,8 @@ model CouponDiscountDetails {
   discountType  DiscountType
   discountValue Decimal
   coupon        Coupon       @relation(fields: [couponId], references: [id])
+
+  @@index([couponId])
 }
 
 model CouponRedemption {
@@ -43,6 +49,10 @@ model CouponRedemption {
   status         CouponRedemptionStatus
   coupon         Coupon                 @relation(fields: [couponId], references: [id])
   attributes     Attribute[]
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([orderId])
 }
 
 model CouponRestriction {
@@ -61,6 +71,7 @@ model CouponRestriction {
   maxUsesRestriction         MaxUsesRestriction?
 
   @@unique([couponId, restrictionType], name: "couponId_restrictionType")
+  @@index([couponId])
 }
 
 model ProductRestriction {
@@ -68,6 +79,8 @@ model ProductRestriction {
   restrictionId     String            @unique
   products          Product[]
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model CategoryRestriction {
@@ -75,6 +88,8 @@ model CategoryRestriction {
   restrictionId     String            @unique
   categories        Category[]
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model UserGroupRestriction {
@@ -82,6 +97,8 @@ model UserGroupRestriction {
   restrictionId     String            @unique
   userGroups        UserGroup[]
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model MinimumPurchaseRestriction {
@@ -89,6 +106,8 @@ model MinimumPurchaseRestriction {
   restrictionId     String            @unique
   minimumAmount     Decimal
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model LocationCodeRestriction {
@@ -96,6 +115,8 @@ model LocationCodeRestriction {
   restrictionId     String            @unique
   locationCodes     LocationCode[]
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model PaymentMethodRestriction {
@@ -103,6 +124,8 @@ model PaymentMethodRestriction {
   restrictionId     String            @unique
   paymentMethods    PaymentMethod[]
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model ChannelRestriction {
@@ -110,6 +133,8 @@ model ChannelRestriction {
   restrictionId     String            @unique
   channels          Channel[]
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model MaxUsesRestriction {
@@ -117,6 +142,8 @@ model MaxUsesRestriction {
   restrictionId     String            @unique
   maxUses           Int
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
 }
 
 model Attribute {
@@ -143,6 +170,8 @@ model CouponFundingPartner {
   partner      FundingPartner @relation(fields: [partnerId], references: [id])
 
   @@unique([couponId, partnerId], name: "couponId_partnerId")
+  @@index([couponId])
+  @@index([partnerId])
 }
 
 // New tables for linked entities
@@ -151,42 +180,56 @@ model Product {
   id           String               @id @default(uuid())
   name         String
   restrictions ProductRestriction[]
+
+  @@index([name]) // Adding index on name for faster searches
 }
 
 model Category {
   id           String                @id @default(uuid())
   name         String
   restrictions CategoryRestriction[]
+
+  @@index([name]) // Adding index on name for faster searches
 }
 
 model LocationCode {
   id           String                    @id @default(uuid())
   code         String                    @unique
   restrictions LocationCodeRestriction[]
+
+  @@index([code]) // Adding index on code for faster searches
 }
 
 model FundingPartner {
   id             String                 @id @default(uuid())
   partnerName    String                 @unique
   couponPartners CouponFundingPartner[]
+
+  @@index([partnerName]) // Adding index on partnerName for faster searches
 }
 
 model PaymentMethod {
   id           String                     @id @default(uuid())
   name         String                     @unique
   restrictions PaymentMethodRestriction[]
+
+  @@index([name]) // Adding index on name for faster searches
 }
 
 model Channel {
   id           String               @id @default(uuid())
   name         String               @unique
   restrictions ChannelRestriction[]
+
+  @@index([name]) // Adding index on name for faster searches
 }
 
 model UserGroup {
   id           String                 @id @default(uuid())
   name         String                 @unique
   restrictions UserGroupRestriction[]
+
+  @@index([name]) // Adding index on name for faster searches
 }
 
 enum DiscountType {

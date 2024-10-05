@@ -8,9 +8,23 @@ import {
   IsDate,
   IsArray,
   ValidateNested,
+  Validate,
 } from 'class-validator';
 import { DiscountType, RestrictionType } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+
+class IsValidDateFormat {
+  // Custom validator for validating the "DD-MM-YYYY" date format
+  validate(value: string): boolean {
+    const dateFormatRegex =
+      /^(0[1-9]|[1-2][0-9]|3[0-1])-(0[1-9]|1[0-2])-\d{4}$/;
+    return dateFormatRegex.test(value);
+  }
+
+  defaultMessage(): string {
+    return 'Invalid date format. Please use "DD-MM-YYYY".';
+  }
+}
 
 export class CouponDiscountDetailsDto {
   @ApiProperty({ enum: DiscountType })
@@ -109,14 +123,26 @@ export class CreateCouponDto {
   @IsString()
   description?: string;
 
-  @ApiProperty()
-  @IsNotEmpty()
+  @ApiProperty({
+    description: `Coupon code's start date in MM-DD-YYYY format`,
+    example: '11-22-2024',
+    type: Date,
+  })
   @IsDate()
+  @Transform(({ value }) => new Date(value))
+  @Validate(IsValidDateFormat)
+  @Type(() => Date)
   startDate: Date;
 
-  @ApiProperty()
-  @IsNotEmpty()
+  @ApiProperty({
+    description: `Coupon code's end date in MM-DD-YYYY format`,
+    example: '12-22-2024',
+    type: Date,
+  })
   @IsDate()
+  @Transform(({ value }) => new Date(value))
+  @Validate(IsValidDateFormat)
+  @Type(() => Date)
   endDate: Date;
 
   @ApiProperty()
@@ -143,16 +169,27 @@ export class UpdateCouponDto {
   @IsString()
   description?: string;
 
-  @ApiProperty()
-  @IsOptional()
+  @ApiProperty({
+    description: `Coupon code's start date in MM-DD-YYYY format`,
+    example: '11-22-2024',
+    type: Date,
+  })
   @IsDate()
-  startDate?: Date;
+  @Transform(({ value }) => new Date(value))
+  @Validate(IsValidDateFormat)
+  @Type(() => Date)
+  startDate: Date;
 
-  @ApiProperty()
-  @IsOptional()
+  @ApiProperty({
+    description: `Coupon code's end date in MM-DD-YYYY format`,
+    example: '12-22-2024',
+    type: Date,
+  })
   @IsDate()
-  endDate?: Date;
-
+  @Transform(({ value }) => new Date(value))
+  @Validate(IsValidDateFormat)
+  @Type(() => Date)
+  endDate: Date;
   @ApiProperty()
   @IsOptional()
   @ValidateNested()

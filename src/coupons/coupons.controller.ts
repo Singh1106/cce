@@ -9,12 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CouponsService } from './coupons.service';
-import {
-  CreateCouponDto,
-  UpdateCouponDto,
-  ValidateCouponDto,
-  RedeemCouponDto,
-} from './dto';
+import { CreateCouponDto, UpdateCouponDto } from './dto';
 
 @ApiTags('coupons')
 @Controller('coupons')
@@ -55,15 +50,15 @@ export class CouponsController {
     return this.couponsService.remove(id);
   }
 
-  @Post('validate')
-  @ApiOperation({ summary: 'Validate a coupon' })
-  validate(@Body() validateCouponDto: ValidateCouponDto) {
-    return this.couponsService.validate(validateCouponDto);
-  }
+  // @Post('block')
+  // @ApiOperation({ summary: 'Validate a coupon' })
+  // validate(@Body() validateCouponDto: ValidateCouponDto) {
+  //   return this.couponsService.validate(validateCouponDto);
+  // }
 
-  @Post('redeem')
-  @ApiOperation({ summary: 'Redeem a coupon' })
-  redeem(@Body() redeemCouponDto: RedeemCouponDto) {
-    return this.couponsService.redeem(redeemCouponDto);
-  }
+  // @Post('redeem')
+  // @ApiOperation({ summary: 'Redeem a coupon' })
+  // redeem(@Body() redeemCouponDto: RedeemCouponDto) {
+  //   return this.couponsService.redeem(redeemCouponDto);
+  // }
 }
