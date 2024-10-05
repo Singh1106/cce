@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Coupon {
+  id                String              @id @default(uuid())
+  code              String              @unique
+  description       String?
+  discountType      String
+  discountValue     Decimal
+  startDate         DateTime
+  endDate           DateTime
+  maxUses           Int?
+  currentUses       Int                 @default(0)
+  minPurchaseAmount Decimal?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  redemptions       CouponRedemption[]
+  restrictions      CouponRestriction[]
+}
+
+model CouponRedemption {
+  id             String   @id @default(uuid())
+  couponId       String
+  userId         String
+  orderId        String
+  redemptionDate DateTime @default(now())
+  discountAmount Decimal
+  coupon         Coupon   @relation(fields: [couponId], references: [id])
+}
+
+model CouponRestriction {
+  id               String @id @default(uuid())
+  couponId         String
+  restrictionType  String
+  restrictionValue String
+  coupon           Coupon @relation(fields: [couponId], references: [id])
+}
