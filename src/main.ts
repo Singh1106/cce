@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { PrismaClientExceptionFilter } from './custom/prisma-client-exception.filter';
+import { PrismaClientExceptionFilter } from '../prisma/exception/prisma-client-exception.filter';
 import { envEnums } from './config/enums';
 import { ConfigService } from '@nestjs/config';
 import { ServerSettingsEnvVariables } from './config/types';

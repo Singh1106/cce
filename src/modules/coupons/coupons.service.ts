@@ -43,122 +43,123 @@ export class CouponsService {
               discountValue: discountDetails.discountValue,
             },
           },
-          restrictions: restrictions
-            ? {
-                create: restrictions.map((restriction) => {
-                  const baseRestriction = {
-                    restrictionType: restriction.restrictionType,
-                  };
+          restrictions:
+            restrictions && restrictions.length > 0
+              ? {
+                  create: restrictions.map((restriction) => {
+                    const baseRestriction = {
+                      restrictionType: restriction.restrictionType,
+                    };
 
-                  switch (restriction.restrictionType) {
-                    case RestrictionType.PRODUCT:
-                      return {
-                        ...baseRestriction,
-                        productRestriction: {
-                          create: {
-                            products: {
-                              connect: (
-                                restriction.restrictionValue as ProductRestrictionDto
-                              ).productIds.map((id) => ({ id })),
+                    switch (restriction.restrictionType) {
+                      case RestrictionType.PRODUCT:
+                        return {
+                          ...baseRestriction,
+                          productRestriction: {
+                            create: {
+                              products: {
+                                connect: (
+                                  restriction.restrictionValue as ProductRestrictionDto
+                                ).productIds.map((id) => ({ id })),
+                              },
                             },
                           },
-                        },
-                      };
-                    case RestrictionType.CATEGORY:
-                      return {
-                        ...baseRestriction,
-                        categoryRestriction: {
-                          create: {
-                            categories: {
-                              connect: (
-                                restriction.restrictionValue as CategoryRestrictionDto
-                              ).categoryIds.map((id) => ({ id })),
+                        };
+                      case RestrictionType.CATEGORY:
+                        return {
+                          ...baseRestriction,
+                          categoryRestriction: {
+                            create: {
+                              categories: {
+                                connect: (
+                                  restriction.restrictionValue as CategoryRestrictionDto
+                                ).categoryIds.map((id) => ({ id })),
+                              },
                             },
                           },
-                        },
-                      };
-                    case RestrictionType.USER_GROUP:
-                      return {
-                        ...baseRestriction,
-                        userGroupRestriction: {
-                          create: {
-                            userGroups: {
-                              connect: (
-                                restriction.restrictionValue as UserGroupRestrictionDto
-                              ).userGroupIds.map((id) => ({ id })),
+                        };
+                      case RestrictionType.USER_GROUP:
+                        return {
+                          ...baseRestriction,
+                          userGroupRestriction: {
+                            create: {
+                              userGroups: {
+                                connect: (
+                                  restriction.restrictionValue as UserGroupRestrictionDto
+                                ).userGroupIds.map((id) => ({ id })),
+                              },
                             },
                           },
-                        },
-                      };
-                    case RestrictionType.MINIMUM_PURCHASE:
-                      return {
-                        ...baseRestriction,
-                        minimumPurchaseRestriction: {
-                          create: {
-                            minimumAmount: (
-                              restriction.restrictionValue as MinimumPurchaseRestrictionDto
-                            ).minimumAmount,
-                          },
-                        },
-                      };
-                    case RestrictionType.LOCATION_CODE:
-                      return {
-                        ...baseRestriction,
-                        locationCodeRestriction: {
-                          create: {
-                            locationCodes: {
-                              connect: (
-                                restriction.restrictionValue as LocationCodeRestrictionDto
-                              ).locationCodes.map((code) => ({ code })),
+                        };
+                      case RestrictionType.MINIMUM_PURCHASE:
+                        return {
+                          ...baseRestriction,
+                          minimumPurchaseRestriction: {
+                            create: {
+                              minimumAmount: (
+                                restriction.restrictionValue as MinimumPurchaseRestrictionDto
+                              ).minimumAmount,
                             },
                           },
-                        },
-                      };
-                    case RestrictionType.PAYMENT_METHOD:
-                      return {
-                        ...baseRestriction,
-                        paymentMethodRestriction: {
-                          create: {
-                            paymentMethods: {
-                              connect: (
-                                restriction.restrictionValue as PaymentMethodRestrictionDto
-                              ).paymentMethodIds.map((id) => ({ id })),
+                        };
+                      case RestrictionType.LOCATION_CODE:
+                        return {
+                          ...baseRestriction,
+                          locationCodeRestriction: {
+                            create: {
+                              locationCodes: {
+                                connect: (
+                                  restriction.restrictionValue as LocationCodeRestrictionDto
+                                ).locationCodes.map((code) => ({ code })),
+                              },
                             },
                           },
-                        },
-                      };
-                    case RestrictionType.CHANNEL:
-                      return {
-                        ...baseRestriction,
-                        channelRestriction: {
-                          create: {
-                            channels: {
-                              connect: (
-                                restriction.restrictionValue as ChannelRestrictionDto
-                              ).channelIds.map((id) => ({ id })),
+                        };
+                      case RestrictionType.PAYMENT_METHOD:
+                        return {
+                          ...baseRestriction,
+                          paymentMethodRestriction: {
+                            create: {
+                              paymentMethods: {
+                                connect: (
+                                  restriction.restrictionValue as PaymentMethodRestrictionDto
+                                ).paymentMethodIds.map((id) => ({ id })),
+                              },
                             },
                           },
-                        },
-                      };
-                    case RestrictionType.MAX_USES:
-                      return {
-                        ...baseRestriction,
-                        maxUsesRestriction: {
-                          create: {
-                            maxUses: (
-                              restriction.restrictionValue as MaxUsesRestrictionDto
-                            ).maxUses,
+                        };
+                      case RestrictionType.CHANNEL:
+                        return {
+                          ...baseRestriction,
+                          channelRestriction: {
+                            create: {
+                              channels: {
+                                connect: (
+                                  restriction.restrictionValue as ChannelRestrictionDto
+                                ).channelIds.map((id) => ({ id })),
+                              },
+                            },
                           },
-                        },
-                      };
-                    default:
-                      throw new Error(
-                        `Unsupported restriction type: ${restriction.restrictionType}`,
-                      );
-                  }
-                }),
-              }
-            : undefined,
+                        };
+                      case RestrictionType.MAX_USES:
+                        return {
+                          ...baseRestriction,
+                          maxUsesRestriction: {
+                            create: {
+                              maxUses: (
+                                restriction.restrictionValue as MaxUsesRestrictionDto
+                              ).maxUses,
+                            },
+                          },
+                        };
+                      default:
+                        throw new Error(
+                          `Unsupported restriction type: ${restriction.restrictionType}`,
+                        );
+                    }
+                  }),
+                }
+              : undefined,
         },
       });
 
