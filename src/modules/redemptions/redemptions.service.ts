@@ -1,17 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import {
-  CouponRedemption,
-  CouponRedemptionStatus,
-  CouponRestriction,
-  RestrictionType,
-} from '@prisma/client';
-import { BlockCouponDto, RedeemCouponDto } from './dto';
+import { CouponRedemptionStatus, RestrictionType } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
+import { BlockCouponDto, RedeemCouponDto } from './dto';
 
 @Injectable()
 export class RedemptionsService {
@@ -31,7 +26,7 @@ export class RedemptionsService {
     }
 
     // Step 2: Validate restrictions
-    await this.checkRestrictions(coupon);
+    await this.checkRestrictions(coupon, blockCouponDto);
 
     // Step 3: Block the coupon by creating a new redemption
     return this.prisma.couponRedemption.create({
@@ -96,33 +91,38 @@ export class RedemptionsService {
 
     return claimedCouponRedemption; // Return the final result
   }
-
-  private async checkRestrictions(coupon) {
+  private async checkRestrictions(coupon, blockCouponDto: BlockCouponDto) {
     for (const restriction of coupon.restrictions) {
       switch (restriction.restrictionType) {
         case RestrictionType.PRODUCT:
-          await this.checkProductRestrictions(restriction);
+          await this.checkProductRestrictions(restriction, blockCouponDto);
           break;
         case RestrictionType.CATEGORY:
-          await this.checkCategoryRestrictions(restriction);
+          await this.checkCategoryRestrictions(restriction, blockCouponDto);
           break;
         case RestrictionType.USER_GROUP:
-          await this.checkUserGroupRestrictions(restriction);
+          await this.checkUserGroupRestrictions(restriction, blockCouponDto);
           break;
         case RestrictionType.MINIMUM_PURCHASE:
-          await this.checkMinimumPurchaseRestrictions(restriction);
+          await this.checkMinimumPurchaseRestrictions(
+            restriction,
+            blockCouponDto,
+          );
           break;
         case RestrictionType.LOCATION_CODE:
-          await this.checkLocationCodeRestrictions(restriction);
+          await this.checkLocationCodeRestrictions(restriction, blockCouponDto);
           break;
         case RestrictionType.PAYMENT_METHOD:
-          await this.checkPaymentMethodRestrictions(restriction);
+          await this.checkPaymentMethodRestrictions(
+            restriction,
+            blockCouponDto,
+          );
           break;
         case RestrictionType.CHANNEL:
-          await this.checkChannelRestrictions(restriction);
+          await this.checkChannelRestrictions(restriction, blockCouponDto);
           break;
         case RestrictionType.MAX_USES:
-          await this.checkMaxUsesRestrictions(restriction);
+          await this.checkMaxUsesRestrictions(restriction, blockCouponDto);
           break;
         default:
           throw new BadRequestException('Unknown restriction type');
@@ -130,38 +130,167 @@ export class RedemptionsService {
     }
   }
 
-  private async checkProductRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check product restrictions
-    // e.g., verify if the product is in the user's cart or eligible products
+  private async checkProductRestrictions(restriction, dto: BlockCouponDto) {
+    if (!dto.product) {
+      throw new BadRequestException('Product ID is required for this coupon');
+    }
+
+    const allowedProductIds = await this.prisma.productRestriction
+      .findUnique({
+        where: { restrictionId: restriction.id },
+        include: { products: true },
+      })
+      .then((res) => res.products.map((p) => p.name));
+
+    if (!allowedProductIds.includes(dto.product)) {
+      throw new BadRequestException(
+        'The product is not eligible for this coupon',
+      );
+    }
   }
 
-  private async checkCategoryRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check category restrictions
+  private async checkCategoryRestrictions(restriction, dto: BlockCouponDto) {
+    if (!dto.category) {
+      throw new BadRequestException('Category ID is required for this coupon');
+    }
+
+    const allowedCategoryIds = await this.prisma.categoryRestriction
+      .findUnique({
+        where: { restrictionId: restriction.id },
+        include: { categories: true },
+      })
+      .then((res) => res.categories.map((c) => c.name));
+
+    if (!allowedCategoryIds.includes(dto.category)) {
+      throw new BadRequestException(
+        'The category is not eligible for this coupon',
+      );
+    }
   }
 
-  private async checkUserGroupRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check user group restrictions
+  private async checkUserGroupRestrictions(restriction, dto: BlockCouponDto) {
+    if (!dto.userGroup) {
+      throw new BadRequestException('User group is required for this coupon');
+    }
+
+    const allowedUserGroups = await this.prisma.userGroupRestriction
+      .findUnique({
+        where: { restrictionId: restriction.id },
+        include: { userGroups: true },
+      })
+      .then((res) => res.userGroups.map((ug) => ug.name));
+
+    if (!allowedUserGroups.includes(dto.userGroup)) {
+      throw new BadRequestException(
+        'The user group is not eligible for this coupon',
+      );
+    }
   }
 
   private async checkMinimumPurchaseRestrictions(
-    restriction: CouponRestriction,
+    restriction,
+    dto: BlockCouponDto,
   ) {
-    // Implement your logic to check minimum purchase restrictions
+    const minimumPurchase =
+      await this.prisma.minimumPurchaseRestriction.findUnique({
+        where: { restrictionId: restriction.id },
+      });
+
+    if (dto.purchaseAmount < Number(minimumPurchase.minimumAmount)) {
+      throw new BadRequestException(
+        `Purchase amount must be at least ${minimumPurchase.minimumAmount}`,
+      );
+    }
   }
 
-  private async checkLocationCodeRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check location code restrictions
+  private async checkLocationCodeRestrictions(
+    restriction,
+    dto: BlockCouponDto,
+  ) {
+    if (!dto.locationCode) {
+      throw new BadRequestException(
+        'Location code is required for this coupon',
+      );
+    }
+
+    const allowedLocationCodes = await this.prisma.locationCodeRestriction
+      .findUnique({
+        where: { restrictionId: restriction.id },
+        include: { locationCodes: true },
+      })
+      .then((res) => res.locationCodes.map((lc) => lc.code));
+
+    if (!allowedLocationCodes.includes(dto.locationCode)) {
+      throw new BadRequestException(
+        'The location is not eligible for this coupon',
+      );
+    }
   }
 
-  private async checkPaymentMethodRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check payment method restrictions
+  private async checkPaymentMethodRestrictions(
+    restriction,
+    dto: BlockCouponDto,
+  ) {
+    if (!dto.paymentMethod) {
+      throw new BadRequestException(
+        'Payment method is required for this coupon',
+      );
+    }
+
+    const allowedPaymentMethods = await this.prisma.paymentMethodRestriction
+      .findUnique({
+        where: { restrictionId: restriction.id },
+        include: { paymentMethods: true },
+      })
+      .then((res) => res.paymentMethods.map((pm) => pm.name));
+
+    if (!allowedPaymentMethods.includes(dto.paymentMethod)) {
+      throw new BadRequestException(
+        'The payment method is not eligible for this coupon',
+      );
+    }
   }
 
-  private async checkChannelRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check channel restrictions
+  private async checkChannelRestrictions(restriction, dto: BlockCouponDto) {
+    if (!dto.channel) {
+      throw new BadRequestException('Channel is required for this coupon');
+    }
+
+    const allowedChannels = await this.prisma.channelRestriction
+      .findUnique({
+        where: { restrictionId: restriction.id },
+        include: { channels: true },
+      })
+      .then((res) => res.channels.map((c) => c.name));
+
+    if (!allowedChannels.includes(dto.channel)) {
+      throw new BadRequestException(
+        'The channel is not eligible for this coupon',
+      );
+    }
   }
 
-  private async checkMaxUsesRestrictions(restriction: CouponRestriction) {
-    // Implement your logic to check max uses restrictions
+  private async checkMaxUsesRestrictions(restriction, dto: BlockCouponDto) {
+    const maxUsesRestriction = await this.prisma.maxUsesRestriction.findUnique({
+      where: { restrictionId: restriction.id },
+    });
+
+    const currentUses = await this.prisma.couponRedemption.count({
+      where: {
+        couponId: restriction.couponId,
+        status: {
+          in: [
+            CouponRedemptionStatus.COMPLETED,
+            CouponRedemptionStatus.BLOCKED,
+          ],
+        },
+      },
+    });
+
+    if (currentUses >= maxUsesRestriction.maxUses) {
+      throw new BadRequestException(
+        'Coupon has reached its maximum number of uses',
+      );
+    }
   }
 }
