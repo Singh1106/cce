@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CouponRedemptionStatus, RestrictionType } from '@prisma/client';
+import {
+  CouponDiscountDetails,
+  CouponRedemptionStatus,
+  DiscountType,
+  RestrictionType,
+} from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
 import { BlockCouponDto, RedeemCouponDto } from './dto';
 
@@ -17,6 +22,7 @@ export class RedemptionsService {
     const coupon = await this.prisma.coupon.findUnique({
       where: { code: blockCouponDto.code },
       include: {
+        discountDetails: true,
         restrictions: true, // Include restrictions for further validation
       },
     });
@@ -27,15 +33,18 @@ export class RedemptionsService {
 
     // Step 2: Validate restrictions
     await this.checkRestrictions(coupon, blockCouponDto);
-
+    const discountAmount = this.calculateDiscountAmount(
+      coupon.discountDetails,
+      blockCouponDto.purchaseAmount,
+    );
     // Step 3: Block the coupon by creating a new redemption
     return this.prisma.couponRedemption.create({
       data: {
         coupon: { connect: { id: coupon.id } },
         userId: blockCouponDto.userId, // Replace with actual user ID
         orderId: blockCouponDto.orderId, // Replace with actual order ID
-        purchaseAmount: 100, // Replace with actual purchase amount
-        discountAmount: 10, // Replace with actual discount amount
+        purchaseAmount: blockCouponDto.purchaseAmount, // Replace with actual purchase amount
+        discountAmount, // Replace with actual discount amount
         status: CouponRedemptionStatus.BLOCKED, // Set the status to BLOCKED
         statusHistory: {
           create: {
@@ -44,6 +53,26 @@ export class RedemptionsService {
         },
       },
     });
+  }
+  private calculateDiscountAmount(
+    discountDetails: CouponDiscountDetails,
+    purchaseAmount: number,
+  ): number {
+    const value = Number(discountDetails.discountValue);
+    switch (discountDetails.discountType) {
+      case DiscountType.PERCENTAGE:
+        return (purchaseAmount * value) / 100;
+      case DiscountType.FIXED_AMOUNT:
+        return value;
+      case DiscountType.BUY_X_GET_Y_FREE:
+        // Implement logic for BUY_X_GET_Y_FREE if applicable
+        return 0; // Placeholder
+      case DiscountType.FREE_SHIPPING:
+        // Implement logic for FREE_SHIPPING if applicable
+        return 0; // Placeholder
+      default:
+        throw new BadRequestException('Unknown discount type');
+    }
   }
 
   async claimCoupon(claimCouponDto: RedeemCouponDto) {
@@ -123,6 +152,12 @@ export class RedemptionsService {
           break;
         case RestrictionType.MAX_USES:
           await this.checkMaxUsesRestrictions(restriction, blockCouponDto);
+          break;
+        case RestrictionType.MAX_USES_PER_USER:
+          await this.checkMaxUsesPerUserRestrictions(
+            restriction,
+            blockCouponDto,
+          );
           break;
         default:
           throw new BadRequestException('Unknown restriction type');
@@ -290,6 +325,35 @@ export class RedemptionsService {
     if (currentUses >= maxUsesRestriction.maxUses) {
       throw new BadRequestException(
         'Coupon has reached its maximum number of uses',
+      );
+    }
+  }
+
+  private async checkMaxUsesPerUserRestrictions(
+    restriction,
+    dto: BlockCouponDto,
+  ) {
+    const maxUsesPerUserRestriction =
+      await this.prisma.maxUsesPerUserRestriction.findUnique({
+        where: { restrictionId: restriction.id },
+      });
+    // maxuses would be at a categories level, for example
+    const currentUsesPerUser = await this.prisma.couponRedemption.count({
+      where: {
+        userId: dto.userId,
+        couponId: restriction.couponId,
+        status: {
+          in: [
+            CouponRedemptionStatus.COMPLETED,
+            CouponRedemptionStatus.BLOCKED,
+          ],
+        },
+      },
+    });
+
+    if (currentUsesPerUser >= maxUsesPerUserRestriction.maxUsesPerUser) {
+      throw new BadRequestException(
+        'This user has reached its maximum number of uses for this coupon',
       );
     }
   }

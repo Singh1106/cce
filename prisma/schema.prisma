@@ -82,6 +82,7 @@ model CouponRestriction {
   paymentMethodRestriction   PaymentMethodRestriction?
   channelRestriction         ChannelRestriction?
   maxUsesRestriction         MaxUsesRestriction?
+  MaxUsesPerUserRestriction  MaxUsesPerUserRestriction?
 
   @@unique([couponId, restrictionType], name: "couponId_restrictionType")
   @@index([couponId])
@@ -160,6 +161,16 @@ model MaxUsesRestriction {
   @@index([restrictionId])
 }
 
+model MaxUsesPerUserRestriction {
+  id                String            @id @default(uuid())
+  restrictionId     String            @unique
+  maxUsesPerUser    Int
+  categories        Category[]
+  couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
+
+  @@index([restrictionId])
+}
+
 model Attribute {
   id            String             @id @default(uuid())
   referenceId   String
@@ -199,9 +210,11 @@ model Product {
 }
 
 model Category {
-  id           String                @id @default(uuid())
-  name         String
-  restrictions CategoryRestriction[]
+  id                          String                     @id @default(uuid())
+  name                        String
+  restrictions                CategoryRestriction[]
+  MaxUsesPerUserRestriction   MaxUsesPerUserRestriction? @relation(fields: [maxUsesPerUserRestrictionId], references: [id])
+  maxUsesPerUserRestrictionId String?
 
   @@index([name]) // Adding index on name for faster searches
 }
@@ -262,6 +275,7 @@ enum RestrictionType {
   PAYMENT_METHOD
   CHANNEL
   MAX_USES
+  MAX_USES_PER_USER
 }
 
 enum CouponRedemptionStatus {
