@@ -9,7 +9,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CouponsService } from './coupons.service';
-import { CreateCouponDto, UpdateCouponDto } from './dto';
+import {
+  CreateCouponDto,
+  FetchCouponsWithRestrictionsDto,
+  UpdateCouponDto,
+} from './dto';
 
 @ApiTags('coupons')
 @Controller('coupons')
@@ -50,15 +54,16 @@ export class CouponsController {
     return this.couponsService.remove(id);
   }
 
-  // @Post('block')
-  // @ApiOperation({ summary: 'Validate a coupon' })
-  // validate(@Body() validateCouponDto: ValidateCouponDto) {
-  //   return this.couponsService.validate(validateCouponDto);
-  // }
+  // In coupons.controller.ts
 
-  // @Post('redeem')
-  // @ApiOperation({ summary: 'Redeem a coupon' })
-  // redeem(@Body() redeemCouponDto: RedeemCouponDto) {
-  //   return this.couponsService.redeem(redeemCouponDto);
-  // }
+  @Post('fetch-with-restrictions')
+  @ApiOperation({ summary: 'Fetch coupons with restrictions' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns a list of valid coupons based on the provided criteria.',
+  })
+  fetchCouponsWithRestrictions(@Body() dto: FetchCouponsWithRestrictionsDto) {
+    return this.couponsService.fetchCouponsWithRestrictions(dto);
+  }
 }

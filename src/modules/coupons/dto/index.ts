@@ -282,3 +282,75 @@ export class UpdateCouponDto {
   @Type(() => CouponRestrictionDto)
   restrictions?: CouponRestrictionDto[];
 }
+export class FetchCouponsWithRestrictionsDto {
+  @ApiProperty({
+    description: 'The unique identifier of the user',
+    example: 'USER987654',
+  })
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @ApiProperty({
+    description: 'The total purchase amount for the order',
+    example: 99.99,
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  purchaseAmount: number;
+
+  @ApiProperty({
+    description: 'The unique identifier of the product (if applicable)',
+    required: false,
+    example: 'PROD123',
+  })
+  @IsOptional()
+  @IsString()
+  product?: string;
+
+  @ApiProperty({
+    description: 'The unique identifier of the category (if applicable)',
+    required: false,
+    example: 'CAT456',
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({
+    description: 'The user group name (if applicable)',
+    required: false,
+    example: 'PREMIUM_MEMBERS',
+  })
+  @IsOptional()
+  @IsString()
+  userGroup?: string;
+
+  @ApiProperty({
+    description: 'The location code (if applicable)',
+    required: false,
+    example: 'NYC001',
+  })
+  @IsOptional()
+  @IsString()
+  locationCode?: string;
+
+  @ApiProperty({
+    description: 'The payment method used (if applicable)',
+    required: false,
+    example: 'CREDIT_CARD',
+  })
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @ApiProperty({
+    description:
+      'The channel through which the order is placed (if applicable)',
+    required: false,
+    example: 'MOBILE_APP',
+  })
+  @IsOptional()
+  @IsString()
+  channel?: string;
+}

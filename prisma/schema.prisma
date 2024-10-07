@@ -153,6 +153,7 @@ model ChannelRestriction {
 model MaxUsesRestriction {
   id                String            @id @default(uuid())
   restrictionId     String            @unique
+  // currentUses       Int // doubtful about it. All the logic would mix.
   maxUses           Int
   couponRestriction CouponRestriction @relation(fields: [restrictionId], references: [id])
 

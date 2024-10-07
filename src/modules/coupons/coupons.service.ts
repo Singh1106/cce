@@ -12,6 +12,7 @@ import {
   ProductRestrictionDto,
   UserGroupRestrictionDto,
   CouponRestrictionDto,
+  FetchCouponsWithRestrictionsDto,
 } from './dto';
 import { PrismaService } from 'prisma/prisma.service';
 import { RestrictionType } from '@prisma/client';
@@ -19,6 +20,96 @@ import { RestrictionType } from '@prisma/client';
 @Injectable()
 export class CouponsService {
   constructor(private prisma: PrismaService) {}
+
+  // In coupons.service.ts
+
+  async fetchCouponsWithRestrictions(dto: FetchCouponsWithRestrictionsDto) {
+    // Fetch all active coupons
+    const coupons = await this.prisma.coupon.findMany({
+      where: {
+        isActive: true,
+        startDate: { lte: new Date() },
+        endDate: { gte: new Date() },
+      },
+      include: {
+        restrictions: {
+          include: {
+            productRestriction: { include: { products: true } },
+            categoryRestriction: { include: { categories: true } },
+            userGroupRestriction: { include: { userGroups: true } },
+            minimumPurchaseRestriction: true,
+            locationCodeRestriction: { include: { locationCodes: true } },
+            paymentMethodRestriction: { include: { paymentMethods: true } },
+            channelRestriction: { include: { channels: true } },
+            maxUsesRestriction: true,
+          },
+        },
+        discountDetails: true,
+      },
+    });
+
+    // Filter coupons based on restrictions
+    const validCoupons = coupons.filter((coupon) => {
+      return coupon.restrictions.every((restriction) => {
+        switch (restriction.restrictionType) {
+          case RestrictionType.PRODUCT:
+            return (
+              !dto.product ||
+              restriction.productRestriction.products.some(
+                (p) => p.name === dto.product,
+              )
+            );
+          case RestrictionType.CATEGORY:
+            return (
+              !dto.category ||
+              restriction.categoryRestriction.categories.some(
+                (c) => c.name === dto.category,
+              )
+            );
+          case RestrictionType.USER_GROUP:
+            return (
+              !dto.userGroup ||
+              restriction.userGroupRestriction.userGroups.some(
+                (ug) => ug.name === dto.userGroup,
+              )
+            );
+          case RestrictionType.MINIMUM_PURCHASE:
+            return (
+              dto.purchaseAmount >=
+              Number(restriction.minimumPurchaseRestriction.minimumAmount)
+            );
+          case RestrictionType.LOCATION_CODE:
+            return (
+              !dto.locationCode ||
+              restriction.locationCodeRestriction.locationCodes.some(
+                (lc) => lc.code === dto.locationCode,
+              )
+            );
+          case RestrictionType.PAYMENT_METHOD:
+            return (
+              !dto.paymentMethod ||
+              restriction.paymentMethodRestriction.paymentMethods.some(
+                (pm) => pm.name === dto.paymentMethod,
+              )
+            );
+          case RestrictionType.CHANNEL:
+            return (
+              !dto.channel ||
+              restriction.channelRestriction.channels.some(
+                (c) => c.name === dto.channel,
+              )
+            );
+          case RestrictionType.MAX_USES:
+            // You might want to check the current uses against max uses here
+            return true; // For simplicity, we're not implementing this check here
+          default:
+            return true;
+        }
+      });
+    });
+
+    return validCoupons;
+  }
 
   async create(createCouponDto: CreateCouponDto) {
     const {
